@@ -15,7 +15,8 @@ public class Enemy : MonoBehaviour
         Move,
         Attack,
         Damage,
-        Die
+        Die,
+        FlyingDie
     }
 
     // public 해주면 유니티에서 해당 상태를 알 수 있다.
@@ -34,6 +35,9 @@ public class Enemy : MonoBehaviour
 
         state = State.Search;
 
+        drondOriginSize = drone.localScale;
+
+        droneOriginLocalPosition = drone.localPosition;
     }
 
     // Update is called once per frame
@@ -56,14 +60,46 @@ public class Enemy : MonoBehaviour
             case State.Die:
                 UpdateDie();
                 break;
+            case State.FlyingDie:
+                UpdateFlyingDie();
+                break;
         }
 
     }
 
+    public Transform drone;
+    Vector3 drondOriginSize;
+    Vector3 droneOriginLocalPosition;
     private void UpdateDie()
+    {
+        // 1초 동안
+        currentTime += Time.deltaTime;
+
+        if(currentTime <= 1)
+        {
+            // 2배 점점 커지게 하고싶다.
+            // 그냥 키우면 enemy가 커지니까 drone을 키워야한다.
+            Vector3 targetScale = drondOriginSize * 2;
+            drone.localScale = Vector3.Lerp(drondOriginSize, targetScale, currentTime); // 3초동안 갈거야? currentTiem/3 == 1이니까
+
+            // 랜덤으로 진동하고싶다.
+            //drone.localPosition = droneOriginLocalPosition + UnityEngine.Random.insideUnitSphere * 0.1f;
+            drone.localPosition = droneOriginLocalPosition + new Vector3(1, 0, 1) * UnityEngine.Random.value * 0.1f * currentTime;
+        }
+        else
+        {
+            // 1초 후에 펑 터지고싶다.
+            Destroy(gameObject);
+        }
+    }
+
+
+    private void UpdateFlyingDie()
     {
         throw new NotImplementedException();
     }
+
+    
 
     // 데미지가 발생한 시간을 저장하고
     // 그 시간으로부터 damageTime만큼 시간이 흘렀다면
@@ -184,8 +220,22 @@ public class Enemy : MonoBehaviour
             // 죽음 상태로 전이하고
             state = State.Die;
 
+            // 만약 데미지가 1이면 그냥 죽음
+            // 그렇지 않으면 FlyingDie
+            if(dmg ==1)
+            {
+                state = State.Die;
+            }
+            else
+            {
+                state = State.FlyingDie;
+            }
+            
+
             // 1초 후에 파괴
-            Destroy(gameObject, 1);
+            //Destroy(gameObject, 1);
+
+
         }
         else
         {
